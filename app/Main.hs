@@ -1,27 +1,35 @@
 module Main where
 
-import Control.Monad (void, when)
+import Control.Monad (when)
+import Eval
+import Parser
 import System.Environment (getArgs)
+import System.Exit (exitSuccess)
 import System.IO (hFlush, stdout)
 
 quit :: String -> IO ()
-quit c = when c == "quit" || c == "q" pure ()
+quit c =
+    when (c == "quit" || c == "q") $ do
+        exitSuccess
 
-repl :: IO String
+repl :: IO ()
 repl = do
     putStr "rc> "
     hFlush stdout
     c <- getLine
     quit c
-    repl
+    let res = parseExpr c
+    case res of
+        Left err -> putStrLn err >> repl
+        Right val -> let e = eval val in print e >> repl
 
-eval :: IO ()
-eval = undefined
+evalF :: FilePath -> IO ()
+evalF = undefined
 
 main :: IO ()
 main = do
     args <- getArgs
     case args of
         [] -> repl
-        [f] -> eval f
+        [f] -> evalF f
         _ -> putStrLn "Usage: rc [FILE]"

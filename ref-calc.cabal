@@ -20,6 +20,7 @@ library
     import:           warnings
     exposed-modules:
         Parser
+        Eval
     -- other-modules:
     -- other-extensions:
     build-depends:    base ^>=4.17.2.1
