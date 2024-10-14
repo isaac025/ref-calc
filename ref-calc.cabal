@@ -19,7 +19,6 @@ common warnings
 library
     import:           warnings
     exposed-modules:
-        Expr
         Parser
     -- other-modules:
     -- other-extensions:

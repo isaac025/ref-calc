@@ -1,0 +1,6 @@
+PROCEDURE Swap(x, y : T)
+VAR t : T .
+    t := x;
+    x := y
+    y := t
+
