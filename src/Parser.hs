@@ -11,13 +11,16 @@ data BinOp
     | And
     | Or
     | XOr
-    deriving (Eq)
+    | Impl
+    | Equal
+    deriving (Show, Eq)
 
 data Expr a
     = LitInt Int
     | LitBool Bool
     | BinOpE BinOp (Expr a) (Expr a)
     | Cnd (Expr a) (Expr a) (Expr a)
+    deriving (Show)
 
 -- Helpers --
 whitespace :: Parser ()
@@ -25,16 +28,12 @@ whitespace =
     choice
         [ simpleWhitespace *> whitespace
         , lineComment *> whitespace
-        , blockComment *> whitespace
         , return ()
         ]
   where
     lineComment =
-        try (string "//")
+        try (string "--")
             *> manyTill anyChar (void (char '\n') <|> eof)
-    blockComment =
-        try (string "/**")
-            *> manyTill anyChar (try $ string "*/")
     simpleWhitespace = void $ many1 (oneOf " \t\n")
 
 parens :: Parser a -> Parser a
@@ -75,14 +74,26 @@ factor = chainl1 term (multOp <|> divOp)
 arithExpr :: Parser (Expr a)
 arithExpr = chainl1 factor (addOp <|> subOp)
 
+implOp :: Parser (Expr a -> Expr a -> Expr a)
+implOp = lexeme (string "==>") *> pure (BinOpE Impl)
+
+eqOp :: Parser (Expr a -> Expr a -> Expr a)
+eqOp = lexeme (string "<==>") *> pure (BinOpE Equal)
+
 andOp :: Parser (Expr a -> Expr a -> Expr a)
-andOp = lexeme (string "/\\") *> pure (BinOpE And)
+andOp = lexeme (char '&') *> pure (BinOpE And)
 
 orOp :: Parser (Expr a -> Expr a -> Expr a)
-orOp = lexeme (string "/\\") *> pure (BinOpE Or)
+orOp = lexeme (char '|') *> pure (BinOpE Or)
+
+xorOp :: Parser (Expr a -> Expr a -> Expr a)
+xorOp = lexeme (char '^') *> pure (BinOpE XOr)
+
+propExpr :: Parser (Expr a)
+propExpr = chainl1 arithExpr (andOp <|> xorOp <|> orOp)
 
 boolExpr :: Parser (Expr a)
-boolExpr = chainl1 arithExpr (andOp <|> orOp)
+boolExpr = chainl1 propExpr (implOp <|> eqOp)
 
 expr :: Parser (Expr a)
 expr = boolExpr

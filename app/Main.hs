@@ -21,7 +21,12 @@ repl = do
     let res = parseExpr c
     case res of
         Left err -> putStrLn err >> repl
-        Right val -> let e = eval val in print e >> repl
+        Right val -> do
+            let t = tc val
+             in when (t == IntT || t == BoolT) $ do print' (eval val) t >> repl
+  where
+    print' :: Value -> Type -> IO ()
+    print' v t = putStrLn (show v <> " : " <> show t)
 
 evalF :: FilePath -> IO ()
 evalF = undefined

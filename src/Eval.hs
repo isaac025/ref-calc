@@ -2,7 +2,11 @@ module Eval where
 
 import Parser
 
-data Value = IntVal Int | BoolVal
+data Value = IntVal Int | BoolVal Bool
+
+instance Show Value where
+    show (IntVal i) = show i
+    show (BoolVal b) = show b
 
 data Type = IntT | BoolT
     deriving (Eq)
@@ -52,3 +56,64 @@ tc (BinOpE o e1 e2) =
             if tc e1 == BoolT && tc e2 == BoolT
                 then BoolT
                 else error "+ expects number"
+        Impl ->
+            if tc e1 == BoolT && tc e2 == BoolT
+                then BoolT
+                else error "+ expects number"
+        Equal ->
+            if tc e1 == BoolT && tc e2 == BoolT
+                then BoolT
+                else error "+ expects number"
+
+eval :: Expr a -> Value
+eval (LitInt i) = IntVal i
+eval (LitBool b) = BoolVal b
+eval (Cnd c t e) =
+    if boolDecision (eval c)
+        then eval t
+        else eval e
+eval (BinOpE b e1 e2) =
+    let o = binaryDecision b
+     in o (eval e1) (eval e2)
+
+boolDecision :: Value -> Bool
+boolDecision (BoolVal b) = b
+boolDecision _ = error "IF expects boolean"
+
+binaryDecision :: BinOp -> (Value -> Value -> Value)
+binaryDecision Add = add'
+binaryDecision Sub = sub'
+binaryDecision Mult = mult'
+binaryDecision Div = div'
+binaryDecision And = and'
+binaryDecision Or = or'
+binaryDecision XOr = xor'
+binaryDecision Impl = impl'
+binaryDecision Equal = eq'
+
+add' :: Value -> Value -> Value
+add' (IntVal x) (IntVal y) = IntVal (x + y)
+
+sub' :: Value -> Value -> Value
+sub' (IntVal x) (IntVal y) = IntVal (x - y)
+
+mult' :: Value -> Value -> Value
+mult' (IntVal x) (IntVal y) = IntVal (x * y)
+
+div' :: Value -> Value -> Value
+div' (IntVal x) (IntVal y) = IntVal (x `div` y)
+
+and' :: Value -> Value -> Value
+and' (BoolVal x) (BoolVal y) = BoolVal (x && y)
+
+or' :: Value -> Value -> Value
+or' (BoolVal x) (BoolVal y) = BoolVal (x || y)
+
+xor' :: Value -> Value -> Value
+xor' (BoolVal x) (BoolVal y) = BoolVal ((x && not y) || (not x && y))
+
+impl' :: Value -> Value -> Value
+impl' (BoolVal x) (BoolVal y) = BoolVal (not x || y)
+
+eq' :: Value -> Value -> Value
+eq' (BoolVal x) (BoolVal y) = BoolVal (x == y)
