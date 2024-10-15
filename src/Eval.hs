@@ -31,39 +31,39 @@ tc (BinOpE o e1 e2) =
         Add ->
             if tc e1 == IntT && tc e2 == IntT
                 then IntT
-                else error "+ expects number"
+                else error "+ expects Int64"
         Sub ->
             if tc e1 == IntT && tc e2 == IntT
                 then IntT
-                else error "- expects number"
+                else error "- expects Int64"
         Mult ->
             if tc e1 == IntT && tc e2 == IntT
                 then IntT
-                else error "* expects number"
+                else error "* expects Int64"
         Div ->
             if tc e1 == IntT && tc e2 == IntT
                 then IntT
-                else error "/ expects number"
+                else error "/ expects Int64"
         And ->
             if tc e1 == BoolT && tc e2 == BoolT
                 then BoolT
-                else error "+ expects number"
+                else error "& expects Bool"
         Or ->
             if tc e1 == BoolT && tc e2 == BoolT
                 then BoolT
-                else error "+ expects number"
+                else error "| expects Bool"
         XOr ->
             if tc e1 == BoolT && tc e2 == BoolT
                 then BoolT
-                else error "+ expects number"
+                else error "^ expects Bool"
         Impl ->
             if tc e1 == BoolT && tc e2 == BoolT
                 then BoolT
-                else error "+ expects number"
+                else error "==> expects Bool"
         Equal ->
             if tc e1 == BoolT && tc e2 == BoolT
                 then BoolT
-                else error "+ expects number"
+                else error "<==> expects Bool"
 
 eval :: Expr a -> Value
 eval (LitInt i) = IntVal i
@@ -93,27 +93,36 @@ binaryDecision Equal = eq'
 
 add' :: Value -> Value -> Value
 add' (IntVal x) (IntVal y) = IntVal (x + y)
+add' _ _ = error "+ should only match on Int64"
 
 sub' :: Value -> Value -> Value
 sub' (IntVal x) (IntVal y) = IntVal (x - y)
+sub' _ _ = error "- should only match on Int64"
 
 mult' :: Value -> Value -> Value
 mult' (IntVal x) (IntVal y) = IntVal (x * y)
+mult' _ _ = error "* should only match on Int64"
 
 div' :: Value -> Value -> Value
 div' (IntVal x) (IntVal y) = IntVal (x `div` y)
+div' _ _ = error "/ should only match on Int64"
 
 and' :: Value -> Value -> Value
 and' (BoolVal x) (BoolVal y) = BoolVal (x && y)
+and' _ _ = error "& should only match on Bool"
 
 or' :: Value -> Value -> Value
 or' (BoolVal x) (BoolVal y) = BoolVal (x || y)
+or' _ _ = error "| should only match on Bool"
 
 xor' :: Value -> Value -> Value
 xor' (BoolVal x) (BoolVal y) = BoolVal ((x && not y) || (not x && y))
+xor' _ _ = error "^ should only match on Bool"
 
 impl' :: Value -> Value -> Value
 impl' (BoolVal x) (BoolVal y) = BoolVal (not x || y)
+impl' _ _ = error "==> should only match on Bool"
 
 eq' :: Value -> Value -> Value
 eq' (BoolVal x) (BoolVal y) = BoolVal (x == y)
+eq' _ _ = error "<==> should only match on Bool"
