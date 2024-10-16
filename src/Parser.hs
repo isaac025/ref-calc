@@ -1,6 +1,10 @@
 module Parser where
 
 import Control.Monad (void)
+import Data.Set (Set)
+import Data.Set qualified as S
+import Data.Vector (Vector)
+import Data.Vector qualified as V
 import Text.ParserCombinators.Parsec
 
 data BinOp
@@ -13,14 +17,15 @@ data BinOp
     | XOr
     | Impl
     | Equal
-    deriving (Show, Eq)
+    deriving (Show, Ord, Eq)
 
 data Expr a
     = LitInt Int
     | LitBool Bool
+    | LitArr (Vector (Expr a))
+    | LitSet (Set (Expr a))
     | BinOpE BinOp (Expr a) (Expr a)
-    | Cnd (Expr a) (Expr a) (Expr a)
-    deriving (Show)
+    deriving (Show, Eq, Ord)
 
 -- Helpers --
 whitespace :: Parser ()
@@ -53,8 +58,18 @@ num = LitInt <$> int
 bool :: Parser (Expr a)
 bool = (LitBool True <$ lexeme (string "true")) <|> (LitBool False <$ lexeme (string "false"))
 
+array :: Parser (Expr a)
+array = do
+    elements <- between (lexeme (char '[')) (lexeme (char ']')) (term `sepBy` lexeme (char ','))
+    pure $ LitArr (V.fromList elements)
+
+set :: Parser (Expr a)
+set = do
+    elements <- between (lexeme (char '{')) (lexeme (char '}')) (term `sepBy` lexeme (char ','))
+    pure $ LitSet (S.fromList elements)
+
 term :: Parser (Expr a)
-term = num <|> bool <|> parens expr
+term = num <|> bool <|> array <|> set <|> parens expr
 
 multOp :: Parser (Expr a -> Expr a -> Expr a)
 multOp = lexeme (char '*') *> pure (BinOpE Mult)
@@ -96,7 +111,7 @@ boolExpr :: Parser (Expr a)
 boolExpr = chainl1 propExpr (implOp <|> eqOp)
 
 expr :: Parser (Expr a)
-expr = boolExpr
+expr = boolExpr <|> array <|> set
 
 parseExpr :: String -> Either String (Expr a)
 parseExpr input =

@@ -23,10 +23,12 @@ repl = do
         Left err -> putStrLn err >> repl
         Right val -> do
             let t = tc val
-             in when (t == IntT || t == BoolT) $ do print' (eval val) t >> repl
+             in when (isType t) $ do print' (eval val) t >> repl
   where
     print' :: Value -> Type -> IO ()
     print' v t = putStrLn (show v <> " : " <> show t)
+    isType :: Type -> Bool
+    isType _ = True
 
 evalF :: FilePath -> IO ()
 evalF = undefined
