@@ -6,17 +6,17 @@ import Parser
 import Prelude hiding (null)
 
 data Value
-    = IntVal Int
-    | BoolVal Bool
-    | ArrVal (Vector Value)
-    | SetVal (Set Value)
+    = IntV Int
+    | BoolV Bool
+    | ArrV (Vector Value)
+    | SetV (Set Value)
     deriving (Eq, Ord)
 
 instance Show Value where
-    show (IntVal i) = show i
-    show (BoolVal b) = show b
-    show (SetVal s) = show s
-    show (ArrVal v) = show v
+    show (IntV i) = show i
+    show (BoolV b) = show b
+    show (SetV s) = show s
+    show (ArrV v) = show v
 
 data Type
     = IntT
@@ -34,19 +34,18 @@ instance Show Type where
     show (SetT (Just a)) = "Set of " <> show a
 
 tc :: Expr a -> Type
-tc (LitInt _) = IntT
-tc (LitBool _) = BoolT
-tc (LitSet s)
+tc (IntE _) = IntT
+tc (BoolE _) = BoolT
+tc (SetE s)
     | null s = SetT Nothing
     | otherwise =
         let t = elemAt 1 s
          in SetT (Just (tc t))
-tc (LitArr v) =
+tc (ArrE v) =
     case uncons v of
         Nothing -> ArrT Nothing
         Just (e, _) -> ArrT $ Just (tc e)
-{-
-tc (Cnd c t e) =
+tc (CndE c t e) =
     let ct = tc c
      in if BoolT == ct
             then
@@ -54,7 +53,6 @@ tc (Cnd c t e) =
                     then tc t
                     else error "type mismatch at IF"
             else error $ "IF expects Bool type not: " <> show ct
--}
 tc (BinOpE o e1 e2) =
     case o of
         Add ->
@@ -95,21 +93,20 @@ tc (BinOpE o e1 e2) =
                 else error "<==> expects Bool"
 
 eval :: Expr a -> Value
-eval (LitInt i) = IntVal i
-eval (LitBool b) = BoolVal b
-{-eval (Cnd c t e) =
+eval (IntE i) = IntV i
+eval (BoolE b) = BoolV b
+eval (CndE c t e) =
     if boolDecision (eval c)
         then eval t
         else eval e
--}
-eval (LitArr v) = ArrVal (fmap eval v)
-eval (LitSet s) = SetVal (fromList $ map eval $ toList s)
+eval (ArrE v) = ArrV (fmap eval v)
+eval (SetE s) = SetV (fromList $ map eval $ toList s)
 eval (BinOpE b e1 e2) =
     let o = binaryDecision b
      in o (eval e1) (eval e2)
 
 boolDecision :: Value -> Bool
-boolDecision (BoolVal b) = b
+boolDecision (BoolV b) = b
 boolDecision _ = error "IF expects boolean"
 
 binaryDecision :: BinOp -> (Value -> Value -> Value)
@@ -124,37 +121,37 @@ binaryDecision Impl = impl'
 binaryDecision Equal = eq'
 
 add' :: Value -> Value -> Value
-add' (IntVal x) (IntVal y) = IntVal (x + y)
+add' (IntV x) (IntV y) = IntV (x + y)
 add' _ _ = error "+ should only match on Int64"
 
 sub' :: Value -> Value -> Value
-sub' (IntVal x) (IntVal y) = IntVal (x - y)
+sub' (IntV x) (IntV y) = IntV (x - y)
 sub' _ _ = error "- should only match on Int64"
 
 mult' :: Value -> Value -> Value
-mult' (IntVal x) (IntVal y) = IntVal (x * y)
+mult' (IntV x) (IntV y) = IntV (x * y)
 mult' _ _ = error "* should only match on Int64"
 
 div' :: Value -> Value -> Value
-div' (IntVal x) (IntVal y) = IntVal (x `div` y)
+div' (IntV x) (IntV y) = IntV (x `div` y)
 div' _ _ = error "/ should only match on Int64"
 
 and' :: Value -> Value -> Value
-and' (BoolVal x) (BoolVal y) = BoolVal (x && y)
+and' (BoolV x) (BoolV y) = BoolV (x && y)
 and' _ _ = error "& should only match on Bool"
 
 or' :: Value -> Value -> Value
-or' (BoolVal x) (BoolVal y) = BoolVal (x || y)
+or' (BoolV x) (BoolV y) = BoolV (x || y)
 or' _ _ = error "| should only match on Bool"
 
 xor' :: Value -> Value -> Value
-xor' (BoolVal x) (BoolVal y) = BoolVal ((x && not y) || (not x && y))
+xor' (BoolV x) (BoolV y) = BoolV ((x && not y) || (not x && y))
 xor' _ _ = error "^ should only match on Bool"
 
 impl' :: Value -> Value -> Value
-impl' (BoolVal x) (BoolVal y) = BoolVal (not x || y)
+impl' (BoolV x) (BoolV y) = BoolV (not x || y)
 impl' _ _ = error "==> should only match on Bool"
 
 eq' :: Value -> Value -> Value
-eq' (BoolVal x) (BoolVal y) = BoolVal (x == y)
+eq' (BoolV x) (BoolV y) = BoolV (x == y)
 eq' _ _ = error "<==> should only match on Bool"

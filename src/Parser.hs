@@ -20,11 +20,12 @@ data BinOp
     deriving (Show, Ord, Eq)
 
 data Expr a
-    = LitInt Int
-    | LitBool Bool
-    | LitArr (Vector (Expr a))
-    | LitSet (Set (Expr a))
+    = IntE Int
+    | BoolE Bool
+    | ArrE (Vector (Expr a))
+    | SetE (Set (Expr a))
     | BinOpE BinOp (Expr a) (Expr a)
+    | CndE (Expr a) (Expr a) (Expr a)
     deriving (Show, Eq, Ord)
 
 -- Helpers --
@@ -53,20 +54,20 @@ int :: Parser Int
 int = read <$> lexeme (many1 digit)
 
 num :: Parser (Expr a)
-num = LitInt <$> int
+num = IntE <$> int
 
 bool :: Parser (Expr a)
-bool = (LitBool True <$ lexeme (string "true")) <|> (LitBool False <$ lexeme (string "false"))
+bool = (BoolE True <$ lexeme (string "true")) <|> (BoolE False <$ lexeme (string "false"))
 
 array :: Parser (Expr a)
 array = do
     elements <- between (lexeme (char '[')) (lexeme (char ']')) (term `sepBy` lexeme (char ','))
-    pure $ LitArr (V.fromList elements)
+    pure $ ArrE (V.fromList elements)
 
 set :: Parser (Expr a)
 set = do
     elements <- between (lexeme (char '{')) (lexeme (char '}')) (term `sepBy` lexeme (char ','))
-    pure $ LitSet (S.fromList elements)
+    pure $ SetE (S.fromList elements)
 
 term :: Parser (Expr a)
 term = num <|> bool <|> array <|> set <|> parens expr
@@ -110,8 +111,18 @@ propExpr = chainl1 arithExpr (andOp <|> xorOp <|> orOp)
 boolExpr :: Parser (Expr a)
 boolExpr = chainl1 propExpr (implOp <|> eqOp)
 
+ifExpr :: Parser (Expr a)
+ifExpr = do
+    _ <- lexeme (string "IF")
+    cond <- lexeme expr -- Parse the condition
+    _ <- lexeme (string "THEN")
+    thenExpr <- lexeme expr -- Parse the "then" expression
+    _ <- lexeme (string "ELSE")
+    elseExpr <- lexeme expr -- Parse the "else" expression
+    pure (CndE cond thenExpr elseExpr)
+
 expr :: Parser (Expr a)
-expr = boolExpr <|> array <|> set
+expr = boolExpr <|> array <|> set <|> ifExpr
 
 parseExpr :: String -> Either String (Expr a)
 parseExpr input =
