@@ -87,10 +87,30 @@ tc (BinOpE o e1 e2) =
             if tc e1 == BoolT && tc e2 == BoolT
                 then BoolT
                 else error "==> expects Bool"
-        Equal ->
+        Equiv ->
             if tc e1 == BoolT && tc e2 == BoolT
                 then BoolT
                 else error "<==> expects Bool"
+        Gt ->
+            if tc e1 == IntT && tc e2 == IntT
+                then BoolT
+                else error "> expects Int64"
+        GtE ->
+            if tc e1 == IntT && tc e2 == IntT
+                then BoolT
+                else error ">= expects Int64"
+        Lt ->
+            if tc e1 == IntT && tc e2 == IntT
+                then BoolT
+                else error "< expects Int64"
+        LtE ->
+            if tc e1 == IntT && tc e2 == IntT
+                then BoolT
+                else error "<= expects IntT"
+        Equal ->
+            if tc e1 == IntT && tc e2 == IntT
+                then BoolT
+                else error "= expects Int64"
 
 eval :: Expr a -> Value
 eval (IntE i) = IntV i
@@ -118,6 +138,11 @@ binaryDecision And = and'
 binaryDecision Or = or'
 binaryDecision XOr = xor'
 binaryDecision Impl = impl'
+binaryDecision Equiv = equiv'
+binaryDecision Gt = gt'
+binaryDecision GtE = gtE'
+binaryDecision Lt = lt'
+binaryDecision LtE = ltE'
 binaryDecision Equal = eq'
 
 add' :: Value -> Value -> Value
@@ -152,6 +177,26 @@ impl' :: Value -> Value -> Value
 impl' (BoolV x) (BoolV y) = BoolV (not x || y)
 impl' _ _ = error "==> should only match on Bool"
 
+equiv' :: Value -> Value -> Value
+equiv' (BoolV x) (BoolV y) = BoolV (x == y)
+equiv' _ _ = error "<==> should only match on Bool"
+
+gt' :: Value -> Value -> Value
+gt' (IntV x) (IntV y) = BoolV (x > y)
+gt' _ _ = error "> should only match on Int64"
+
+gtE' :: Value -> Value -> Value
+gtE' (IntV x) (IntV y) = BoolV (x >= y)
+gtE' _ _ = error ">= should only match on Int64"
+
+lt' :: Value -> Value -> Value
+lt' (IntV x) (IntV y) = BoolV (x < y)
+lt' _ _ = error "< should only match on Int64"
+
+ltE' :: Value -> Value -> Value
+ltE' (IntV x) (IntV y) = BoolV (x <= y)
+ltE' _ _ = error "<= should only match on Int64"
+
 eq' :: Value -> Value -> Value
-eq' (BoolV x) (BoolV y) = BoolV (x == y)
-eq' _ _ = error "<==> should only match on Bool"
+eq' (IntV x) (IntV y) = BoolV (x == y)
+eq' _ _ = error "= should only match on Int64"

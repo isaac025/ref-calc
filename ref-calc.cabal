@@ -21,6 +21,7 @@ library
     exposed-modules:
         Parser
         Eval
+        Language
     -- other-modules:
     default-extensions:
         OverloadedStrings

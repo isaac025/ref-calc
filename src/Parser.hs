@@ -16,6 +16,11 @@ data BinOp
     | Or
     | XOr
     | Impl
+    | Equiv
+    | Gt
+    | GtE
+    | Lt
+    | LtE
     | Equal
     deriving (Show, Ord, Eq)
 
@@ -91,10 +96,10 @@ arithExpr :: Parser (Expr a)
 arithExpr = chainl1 factor (addOp <|> subOp)
 
 implOp :: Parser (Expr a -> Expr a -> Expr a)
-implOp = lexeme (string "==>") *> pure (BinOpE Impl)
+implOp = lexeme (string "=>") *> pure (BinOpE Impl)
 
-eqOp :: Parser (Expr a -> Expr a -> Expr a)
-eqOp = lexeme (string "<==>") *> pure (BinOpE Equal)
+equivOp :: Parser (Expr a -> Expr a -> Expr a)
+equivOp = lexeme (string "<=>") *> pure (BinOpE Equiv)
 
 andOp :: Parser (Expr a -> Expr a -> Expr a)
 andOp = lexeme (char '&') *> pure (BinOpE And)
@@ -105,24 +110,42 @@ orOp = lexeme (char '|') *> pure (BinOpE Or)
 xorOp :: Parser (Expr a -> Expr a -> Expr a)
 xorOp = lexeme (char '^') *> pure (BinOpE XOr)
 
-propExpr :: Parser (Expr a)
-propExpr = chainl1 arithExpr (andOp <|> xorOp <|> orOp)
+eqOp :: Parser (Expr a -> Expr a -> Expr a)
+eqOp = lexeme (char '=') *> pure (BinOpE Equal)
+
+gtOp :: Parser (Expr a -> Expr a -> Expr a)
+gtOp = lexeme (char '>') *> pure (BinOpE Gt)
+
+gtEOp :: Parser (Expr a -> Expr a -> Expr a)
+gtEOp = lexeme (string ">=") *> pure (BinOpE GtE)
+
+ltOp :: Parser (Expr a -> Expr a -> Expr a)
+ltOp = lexeme (char '<') *> pure (BinOpE Lt)
+
+ltEOp :: Parser (Expr a -> Expr a -> Expr a)
+ltEOp = lexeme (string "<=") *> pure (BinOpE LtE)
+
+relExpr :: Parser (Expr a)
+relExpr = chainl1 arithExpr (ltOp <|> gtOp <|> gtEOp <|> ltEOp <|> eqOp)
 
 boolExpr :: Parser (Expr a)
-boolExpr = chainl1 propExpr (implOp <|> eqOp)
+boolExpr = chainl1 relExpr (andOp <|> xorOp <|> orOp)
+
+propExpr :: Parser (Expr a)
+propExpr = chainr1 boolExpr implOp
 
 ifExpr :: Parser (Expr a)
 ifExpr = do
     _ <- lexeme (string "IF")
-    cond <- lexeme expr -- Parse the condition
+    cond <- lexeme expr
     _ <- lexeme (string "THEN")
-    thenExpr <- lexeme expr -- Parse the "then" expression
+    thenExpr <- lexeme expr
     _ <- lexeme (string "ELSE")
-    elseExpr <- lexeme expr -- Parse the "else" expression
+    elseExpr <- lexeme expr
     pure (CndE cond thenExpr elseExpr)
 
 expr :: Parser (Expr a)
-expr = boolExpr <|> array <|> set <|> ifExpr
+expr = propExpr <|> array <|> set <|> ifExpr
 
 parseExpr :: String -> Either String (Expr a)
 parseExpr input =
